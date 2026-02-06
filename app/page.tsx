@@ -1,6 +1,6 @@
 "use client";
 
-console.log("APP PAGE VERSION: NEW FORM WITH LABELS");
+console.log("APP PAGE VERSION: FINAL – TYPES FIXED");
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,8 @@ export default function HomePage() {
   const { trips, currentUser, addTrip } = useTrips();
 
   const [isPublishOpen, setIsPublishOpen] = useState(false);
+
+  // ✅ FIXED TYPES
   const [form, setForm] = useState({
     depart: "",
     arrivee: "",
@@ -19,8 +21,8 @@ export default function HomePage() {
     date: "",
     heure: "",
     typeVehicule: "",
-    prixParPlace: "",
-    placesDisponibles: "",
+    prixParPlace: 0,          // ✅ number
+    placesDisponibles: 0,     // ✅ number
   });
 
   return (
@@ -129,7 +131,7 @@ export default function HomePage() {
       {isPublishOpen && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-2xl rounded-3xl bg-white p-6 text-slate-900 shadow-xl">
-            <h2 className="text-xl font-semibold mb-6">
+            <h2 className="mb-6 text-xl font-semibold">
               Publier un trajet
             </h2>
 
@@ -193,11 +195,11 @@ export default function HomePage() {
                 min={1}
                 placeholder="Prix par place (FCFA)"
                 className="rounded-xl border px-4 py-2"
-                value={form.prixParPlace}
+                value={form.prixParPlace || ""}
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    prixParPlace: Number(e.target.value),
+                    prixParPlace: Number(e.target.value) || 0,
                   })
                 }
               />
@@ -207,11 +209,11 @@ export default function HomePage() {
                 min={1}
                 placeholder="Nombre de places disponibles"
                 className="rounded-xl border px-4 py-2"
-                value={form.placesDisponibles}
+                value={form.placesDisponibles || ""}
                 onChange={(e) =>
                   setForm({
                     ...form,
-                    placesDisponibles: Number(e.target.value),
+                    placesDisponibles: Number(e.target.value) || 0,
                   })
                 }
               />

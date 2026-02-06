@@ -15,25 +15,12 @@ type Booking = {
   };
 };
 
-type Message = {
-  id: string;
-  sender_id: string;
-  content: string;
-  created_at: string;
-};
-
 export default function MessagesPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [activeBooking, setActiveBooking] = useState<Booking | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [userId, setUserId] = useState<string>("");
+  const [hasBooking, setHasBooking] = useState(false);
 
-  /* =====================
-     Load bookings
-  ====================== */
   useEffect(() => {
     const load = async () => {
       const {
@@ -45,9 +32,7 @@ export default function MessagesPage() {
         return;
       }
 
-      setUserId(user.id);
-
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("bookings")
         .select(
           `
@@ -62,50 +47,30 @@ export default function MessagesPage() {
         )
         .or(`passenger_id.eq.${user.id},driver_id.eq.${user.id}`);
 
-      setBookings((data ?? []) as Booking[]);
+      if (!error && data && data.length > 0) {
+        // ✅ NORMALIZE Supabase response (trip is an array)
+        const normalized: Booking[] = data
+          .filter((row) => row.trip && row.trip.length > 0)
+          .map((row) => ({
+            id: row.id,
+            passenger_id: row.passenger_id,
+            driver_id: row.driver_id,
+            trip: row.trip[0],
+          }));
+
+        setBookings(normalized);
+        setHasBooking(true);
+      }
+
       setLoading(false);
     };
 
     load();
   }, [router]);
 
-  /* =====================
-     Load messages
-  ====================== */
-  const loadMessages = async (bookingId: string) => {
-    const res = await fetch(`/api/messages?bookingId=${bookingId}`);
-    const data = await res.json();
-    setMessages(data);
-  };
-
-  /* =====================
-     Send message
-  ====================== */
-  const sendMessage = async () => {
-    if (!activeBooking || !newMessage.trim()) return;
-
-    const receiverId =
-      userId === activeBooking.passenger_id
-        ? activeBooking.driver_id
-        : activeBooking.passenger_id;
-
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        bookingId: activeBooking.id,
-        content: newMessage,
-        receiverId,
-      }),
-    });
-
-    setNewMessage("");
-    loadMessages(activeBooking.id);
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         Chargement…
       </div>
     );
@@ -116,76 +81,65 @@ export default function MessagesPage() {
       <MainNavbar active="messages" />
 
       <main className="mx-auto flex max-w-6xl gap-6 px-6 py-6">
-        {/* LEFT */}
-        <section className="w-72 rounded-3xl bg-white p-4 shadow-sm">
-          <h1 className="text-sm font-semibold">Conversations</h1>
-
-          <div className="mt-4 space-y-2">
-            {bookings.length === 0 ? (
-              <p className="text-xs text-slate-500">
-                Aucune conversation
+        {!hasBooking ? (
+          /* 🔒 Locked state */
+          <section className="flex flex-1 items-center justify-center rounded-3xl bg-white p-8 shadow-sm">
+            <div className="text-center text-slate-600">
+              <div className="mb-4 text-4xl">🔒</div>
+              <p className="text-sm font-semibold">
+                La messagerie est disponible uniquement après une réservation
               </p>
-            ) : (
-              bookings.map((b) => (
-                <button
-                  key={b.id}
-                  onClick={() => {
-                    setActiveBooking(b);
-                    loadMessages(b.id);
-                  }}
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm ${
-                    activeBooking?.id === b.id
-                      ? "bg-violet-600 text-white"
-                      : "hover:bg-slate-100"
-                  }`}
-                >
-                  {b.trip.depart} → {b.trip.arrivee}
-                </button>
-              ))
-            )}
-          </div>
-        </section>
-
-        {/* RIGHT */}
-        <section className="flex flex-1 flex-col rounded-3xl bg-white p-6 shadow-sm">
-          {!activeBooking ? (
-            <div className="flex flex-1 items-center justify-center text-slate-400">
-              Sélectionnez une conversation
+              <p className="mt-1 text-xs text-slate-500">
+                Réservez un trajet pour discuter avec le conducteur ou le
+                passager.
+              </p>
+              <button
+                onClick={() => router.push("/")}
+                className="mt-5 rounded-full bg-violet-600 px-6 py-2 text-sm font-semibold text-white hover:bg-violet-700"
+              >
+                Voir les trajets
+              </button>
             </div>
-          ) : (
-            <>
-              <div className="flex-1 space-y-3 overflow-y-auto">
-                {messages.map((m) => (
+          </section>
+        ) : (
+          <>
+            {/* Conversations list */}
+            <section className="flex w-full max-w-xs flex-col rounded-3xl bg-white p-4 shadow-sm">
+              <h1 className="px-1 text-base font-semibold text-slate-900">
+                Messages
+              </h1>
+
+              <div className="mt-4">
+                <div className="flex items-center gap-2 rounded-full bg-slate-50 px-3 py-2 text-sm text-slate-400">
+                  <span>🔍</span>
+                  <input
+                    className="w-full bg-transparent text-xs outline-none placeholder:text-slate-400"
+                    placeholder="Rechercher..."
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                {bookings.map((b) => (
                   <div
-                    key={m.id}
-                    className={`max-w-xs rounded-xl px-3 py-2 text-sm ${
-                      m.sender_id === userId
-                        ? "ml-auto bg-violet-600 text-white"
-                        : "bg-slate-100"
-                    }`}
+                    key={b.id}
+                    className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700"
                   >
-                    {m.content}
+                    {b.trip.depart} → {b.trip.arrivee}
                   </div>
                 ))}
               </div>
+            </section>
 
-              <div className="mt-4 flex gap-2">
-                <input
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Votre message…"
-                  className="flex-1 rounded-full border px-4 py-2 text-sm"
-                />
-                <button
-                  onClick={sendMessage}
-                  className="rounded-full bg-violet-600 px-4 py-2 text-sm text-white"
-                >
-                  Envoyer
-                </button>
+            {/* Conversation detail placeholder */}
+            <section className="flex flex-1 items-center justify-center rounded-3xl bg-white p-6 shadow-sm">
+              <div className="flex flex-col items-center text-slate-400">
+                <div className="mb-3 text-4xl">💬</div>
+                <p className="text-sm">Sélectionnez une conversation</p>
               </div>
-            </>
-          )}
-        </section>
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

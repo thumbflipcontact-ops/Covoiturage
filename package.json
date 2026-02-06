@@ -1,8 +1,8 @@
 {
   "name": "covoiturage",
   "version": "1.0.0",
+  "private": true,
   "description": "",
-  "main": "index.js",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,6 +13,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2",
     "@prisma/client": "^7.3.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.94.0",

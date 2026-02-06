@@ -6,12 +6,26 @@ import { MainNavbar } from "@/components/MainNavbar";
 import { supabase } from "@/lib/supabase";
 import { useTrips } from "@/components/trip-context";
 
+/* =====================
+   Types
+===================== */
+
 type BookingStatus =
   | "pending"
   | "confirmed"
   | "cancelled"
   | "paid"
-  | "completed";
+  | "completed"
+  | "accepted"
+  | "rejected";
+
+type TripRow = {
+  depart: string;
+  arrivee: string;
+  date: string;
+  heure: string;
+  prix_par_place: number;
+};
 
 type Booking = {
   id: string;
@@ -20,13 +34,7 @@ type Booking = {
   created_at: string;
   passenger_id: string;
   driver_id: string;
-  trip: {
-    depart: string;
-    arrivee: string;
-    date: string;
-    heure: string;
-    prix_par_place: number;
-  };
+  trip: TripRow[]; // ✅ Supabase returns an ARRAY
 };
 
 export default function BookingsPage() {
@@ -83,7 +91,7 @@ export default function BookingsPage() {
   }, [currentUser, view, router]);
 
   /* =====================
-     DRIVER: accept / reject (API)
+     DRIVER: accept / reject
   ====================== */
   const decideBooking = async (
     bookingId: string,
@@ -131,7 +139,7 @@ export default function BookingsPage() {
         return;
       }
 
-      alert(`Paiement réussi.\nCode de confirmation : ${data.confirmationCode}`);
+      alert(`Paiement réussi.\nCode : ${data.confirmationCode}`);
       location.reload();
     } catch {
       alert("Impossible de contacter le serveur");
@@ -214,82 +222,90 @@ export default function BookingsPage() {
             <p className="text-sm text-slate-500">Aucune réservation</p>
           ) : (
             <div className="space-y-3">
-              {bookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="flex flex-col justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 sm:flex-row"
-                >
-                  <div>
-                    <p className="font-semibold">
-                      {b.trip.depart} → {b.trip.arrivee}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {b.trip.date} • {b.trip.heure}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {b.seats} place •{" "}
-                      {b.trip.prix_par_place.toLocaleString("fr-FR")} FCFA
-                    </p>
+              {bookings.map((b) => {
+                const trip = b.trip[0]; // ✅ SAFE
+
+                if (!trip) return null;
+
+                return (
+                  <div
+                    key={b.id}
+                    className="flex flex-col justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 sm:flex-row"
+                  >
+                    <div>
+                      <p className="font-semibold">
+                        {trip.depart} → {trip.arrivee}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {trip.date} • {trip.heure}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {b.seats} place •{" "}
+                        {trip.prix_par_place.toLocaleString("fr-FR")} FCFA
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="inline-block rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
+                        {b.status}
+                      </span>
+
+                      {view === "driver" && b.status === "pending" && (
+                        <div className="mt-2 flex gap-2 justify-end">
+                          <button
+                            onClick={() =>
+                              decideBooking(b.id, "accept")
+                            }
+                            className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white"
+                          >
+                            Accepter
+                          </button>
+                          <button
+                            onClick={() =>
+                              decideBooking(b.id, "reject")
+                            }
+                            className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white"
+                          >
+                            Refuser
+                          </button>
+                        </div>
+                      )}
+
+                      {view === "passenger" &&
+                        b.status === "confirmed" && (
+                          <button
+                            onClick={() => initiatePayment(b.id)}
+                            className="mt-2 rounded bg-violet-600 px-3 py-1 text-xs font-semibold text-white"
+                          >
+                            Payer
+                          </button>
+                        )}
+
+                      {view === "driver" && b.status === "paid" && (
+                        <div className="mt-2 flex gap-2 justify-end">
+                          <input
+                            className="w-24 rounded border px-2 py-1 text-xs"
+                            placeholder="Code"
+                            value={codeInputs[b.id] ?? ""}
+                            onChange={(e) =>
+                              setCodeInputs({
+                                ...codeInputs,
+                                [b.id]: e.target.value,
+                              })
+                            }
+                          />
+                          <button
+                            onClick={() => confirmTrip(b.id)}
+                            className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white"
+                          >
+                            Confirmer
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="text-right">
-                    <span className="inline-block rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
-                      {b.status}
-                    </span>
-
-                    {/* DRIVER ACTIONS */}
-                    {view === "driver" && b.status === "pending" && (
-                      <div className="mt-2 flex gap-2 justify-end">
-                        <button
-                          onClick={() => decideBooking(b.id, "accept")}
-                          className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white"
-                        >
-                          Accepter
-                        </button>
-                        <button
-                          onClick={() => decideBooking(b.id, "reject")}
-                          className="rounded bg-red-600 px-3 py-1 text-xs font-semibold text-white"
-                        >
-                          Refuser
-                        </button>
-                      </div>
-                    )}
-
-                    {/* PASSENGER PAY */}
-                    {view === "passenger" && b.status === "confirmed" && (
-                      <button
-                        onClick={() => initiatePayment(b.id)}
-                        className="mt-2 rounded bg-violet-600 px-3 py-1 text-xs font-semibold text-white"
-                      >
-                        Payer
-                      </button>
-                    )}
-
-                    {/* DRIVER CONFIRM */}
-                    {view === "driver" && b.status === "paid" && (
-                      <div className="mt-2 flex gap-2 justify-end">
-                        <input
-                          className="w-24 rounded border px-2 py-1 text-xs"
-                          placeholder="Code"
-                          value={codeInputs[b.id] ?? ""}
-                          onChange={(e) =>
-                            setCodeInputs({
-                              ...codeInputs,
-                              [b.id]: e.target.value,
-                            })
-                          }
-                        />
-                        <button
-                          onClick={() => confirmTrip(b.id)}
-                          className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white"
-                        >
-                          Confirmer
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>

@@ -38,7 +38,9 @@ export default function GainsPage() {
     }
 
     const load = async () => {
-      // 1️⃣ Sync wallet (authoritative balance)
+      /* =====================
+         1️⃣ Sync wallet
+      ====================== */
       const walletRes = await fetch("/api/wallet/sync", {
         method: "POST",
       });
@@ -48,8 +50,10 @@ export default function GainsPage() {
         setBalance(wallet.balance);
       }
 
-      // 2️⃣ Load completed bookings for history
-      const { data } = await supabase
+      /* =====================
+         2️⃣ Load completed bookings
+      ====================== */
+      const { data, error } = await supabase
         .from("bookings")
         .select(
           `
@@ -69,7 +73,20 @@ export default function GainsPage() {
         .eq("status", "completed")
         .order("created_at", { ascending: false });
 
-      setBookings(data ?? []);
+      if (!error && data) {
+        // ✅ NORMALIZE Supabase response (trip is an array)
+        const normalized: Booking[] = data
+          .filter((row) => row.trip && row.trip.length > 0)
+          .map((row) => ({
+            id: row.id,
+            seats: row.seats,
+            created_at: row.created_at,
+            trip: row.trip[0],
+          }));
+
+        setBookings(normalized);
+      }
+
       setLoading(false);
     };
 
@@ -78,7 +95,9 @@ export default function GainsPage() {
 
   const totalTransactions = bookings.length;
 
-  // Monthly gains
+  /* =====================
+     Monthly gains
+  ====================== */
   const now = new Date();
   const monthGains = bookings.reduce((sum, b) => {
     const d = new Date(b.created_at);
@@ -118,7 +137,6 @@ export default function GainsPage() {
 
         {/* Summary cards */}
         <section className="mt-8 grid gap-6 md:grid-cols-3">
-          {/* Total balance */}
           <div className="rounded-3xl bg-white px-6 py-5 shadow-sm">
             <p className="text-xs font-semibold uppercase text-slate-500">
               Solde disponible
@@ -132,7 +150,6 @@ export default function GainsPage() {
             </p>
           </div>
 
-          {/* This month */}
           <div className="rounded-3xl bg-white px-6 py-5 shadow-sm">
             <p className="text-xs font-semibold uppercase text-slate-500">
               Ce mois
@@ -143,7 +160,6 @@ export default function GainsPage() {
             <p className="mt-1 text-xs text-slate-500">{monthLabel}</p>
           </div>
 
-          {/* Payout placeholder */}
           <div className="rounded-3xl bg-white px-6 py-5 shadow-sm">
             <p className="text-xs font-semibold uppercase text-slate-500">
               Retrait

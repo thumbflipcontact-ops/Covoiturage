@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Covoicam</string>
+    <string name="title_activity_main">Covoicam</string>
+    <string name="package_name">com.covoicam.app</string>
+    <string name="custom_url_scheme">com.covoicam.app</string>
+</resources>

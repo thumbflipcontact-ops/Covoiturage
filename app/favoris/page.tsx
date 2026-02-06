@@ -3,15 +3,31 @@
 import { useTrips } from "@/components/trip-context";
 import { MainNavbar } from "@/components/MainNavbar";
 
+/**
+ * Local helper type for trips that MAY have favorites.
+ * This does NOT modify the core Trip type.
+ */
+type TripWithFavorites = {
+  favoriteUserIds?: string[];
+};
+
 export default function FavorisPage() {
   const { trips, currentUser } = useTrips();
+
   const favorites = currentUser
-    ? trips.filter((t) => t.favoriteUserIds.includes(currentUser.id))
+    ? trips.filter((trip) => {
+        const t = trip as TripWithFavorites;
+        return (
+          Array.isArray(t.favoriteUserIds) &&
+          t.favoriteUserIds.includes(currentUser.id)
+        );
+      })
     : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white">
       <MainNavbar active="favoris" />
+
       <main className="mx-auto max-w-6xl px-6 py-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -36,7 +52,7 @@ export default function FavorisPage() {
               <p className="text-base font-semibold text-slate-800">
                 Aucun favori
               </p>
-              <p className="mt-2 text-sm text-slate-500 max-w-md">
+              <p className="mt-2 max-w-md text-sm text-slate-500">
                 Vous n&apos;avez pas encore ajouté de trajets favoris.
               </p>
             </div>
@@ -51,28 +67,29 @@ export default function FavorisPage() {
                     <span className="text-xl text-violet-500">♥</span>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">
-                        {trip.depart} &rarr; {trip.arrivee}
+                        {trip.depart} → {trip.arrivee}
                       </p>
-                      {trip.villeIntermediaire && (
+
+                      {"villeIntermediaire" in trip && trip.villeIntermediaire && (
                         <p className="text-xs text-slate-500">
                           Via {trip.villeIntermediaire}
                         </p>
                       )}
+
                       <p className="mt-1 text-xs text-slate-500">
                         {trip.date} • {trip.heure} • {trip.typeVehicule}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-sm font-semibold text-violet-600">
-                        {trip.prixParPlace.toLocaleString("fr-FR")} FCFA
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {trip.placesDisponibles} place
-                        {trip.placesDisponibles > 1 ? "s" : ""} restantes
-                      </p>
-                    </div>
+
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-violet-600">
+                      {trip.prixParPlace.toLocaleString("fr-FR")} FCFA
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {trip.placesDisponibles} place
+                      {trip.placesDisponibles > 1 ? "s" : ""} restantes
+                    </p>
                   </div>
                 </div>
               ))}
@@ -83,4 +100,3 @@ export default function FavorisPage() {
     </div>
   );
 }
-
