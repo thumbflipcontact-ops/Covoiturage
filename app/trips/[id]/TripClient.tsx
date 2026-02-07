@@ -10,23 +10,14 @@ import { useEffect, useState } from "react";
 ===================== */
 function translateBookingError(msg: string) {
   if (!msg) return "Une erreur est survenue lors de la réservation";
-
-  if (msg.includes("active booking request")) {
+  if (msg.includes("active booking request"))
     return "Vous avez déjà une demande en cours avec ce conducteur";
-  }
-
-  if (msg.includes("not enough seats")) {
+  if (msg.includes("not enough seats"))
     return "Il n’y a plus assez de places disponibles";
-  }
-
-  if (msg.includes("own trip")) {
+  if (msg.includes("own trip"))
     return "Vous ne pouvez pas réserver votre propre trajet";
-  }
-
-  if (msg.includes("Not authenticated")) {
+  if (msg.includes("Not authenticated"))
     return "Vous devez être connecté pour réserver";
-  }
-
   return "Impossible d’effectuer la réservation pour le moment";
 }
 
@@ -39,16 +30,15 @@ export default function TripClient({ id }: { id: string }) {
   const [bookingLoading, setBookingLoading] = useState(false);
 
   /* =====================
-     Wait for trips to load
+     Mark UI ready AFTER first render
+     (not based on trips.length)
   ===================== */
   useEffect(() => {
-    if (trips.length > 0) {
-      setUiReady(true);
-    }
-  }, [trips]);
+    setUiReady(true);
+  }, []);
 
   /* =====================
-     Loading state (CRITICAL)
+     Loading state
   ===================== */
   if (!uiReady) {
     return (
@@ -110,7 +100,7 @@ export default function TripClient({ id }: { id: string }) {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar/>
+      <MainNavbar />
 
       <main className="mx-auto max-w-4xl px-6 py-8">
         <button
