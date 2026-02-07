@@ -1,9 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTrips } from "@/components/trip-context";
 import { MainNavbar } from "@/components/MainNavbar";
+import { supabase } from "@/lib/supabase";
+import { useTrips } from "@/components/trip-context";
 import { useEffect, useState } from "react";
+
+/* =====================
+   Types
+===================== */
+type Trip = {
+  id: string;
+  depart: string;
+  arrivee: string;
+  ville_intermediaire?: string | null;
+  date: string;
+  heure: string;
+  type_vehicule: string;
+  prix_par_place: number;
+  total_seats: number;
+  places_disponibles: number;
+};
 
 /* =====================
    Error translation
@@ -23,24 +40,40 @@ function translateBookingError(msg: string) {
 
 export default function TripClient({ id }: { id: string }) {
   const router = useRouter();
-  const { trips, currentUser } = useTrips();
+  const { currentUser } = useTrips();
 
-  const [uiReady, setUiReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [trip, setTrip] = useState<Trip | null>(null);
+  const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   /* =====================
-     Mark UI ready AFTER first render
-     (not based on trips.length)
+     FETCH TRIP BY ID (CRITICAL FIX)
   ===================== */
   useEffect(() => {
-    setUiReady(true);
-  }, []);
+    const loadTrip = async () => {
+      const { data, error } = await supabase
+        .from("trips")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error || !data) {
+        setTrip(null);
+      } else {
+        setTrip(data);
+      }
+
+      setLoading(false);
+    };
+
+    loadTrip();
+  }, [id]);
 
   /* =====================
-     Loading state
+     Loading
   ===================== */
-  if (!uiReady) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <p className="text-sm text-slate-500">Chargement du trajet…</p>
@@ -48,10 +81,8 @@ export default function TripClient({ id }: { id: string }) {
     );
   }
 
-  const trip = trips.find((t) => t.id === id);
-
   /* =====================
-     Real not-found (AFTER load)
+     Real not-found
   ===================== */
   if (!trip) {
     return (
@@ -115,28 +146,28 @@ export default function TripClient({ id }: { id: string }) {
             {trip.depart} → {trip.arrivee}
           </h1>
 
-          {trip.villeIntermediaire && (
+          {trip.ville_intermediaire && (
             <p className="mt-1 text-sm text-slate-500">
-              Via {trip.villeIntermediaire}
+              Via {trip.ville_intermediaire}
             </p>
           )}
 
           <p className="mt-2 text-sm text-slate-500">
-            {trip.date} • {trip.heure} • {trip.typeVehicule}
+            {trip.date} • {trip.heure} • {trip.type_vehicule}
           </p>
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">Prix par place</p>
               <p className="text-lg font-semibold text-violet-600">
-                {trip.prixParPlace.toLocaleString("fr-FR")} FCFA
+                {trip.prix_par_place.toLocaleString("fr-FR")} FCFA
               </p>
             </div>
 
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs text-slate-500">Places disponibles</p>
               <p className="text-lg font-semibold">
-                {trip.placesDisponibles} / {trip.totalSeats}
+                {trip.places_disponibles} / {trip.total_seats}
               </p>
             </div>
           </div>
@@ -148,10 +179,10 @@ export default function TripClient({ id }: { id: string }) {
           <div className="mt-8 flex justify-end">
             <button
               onClick={handleBooking}
-              disabled={bookingLoading || trip.placesDisponibles === 0}
+              disabled={bookingLoading || trip.places_disponibles === 0}
               className="rounded-full bg-violet-600 px-6 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
             >
-              {trip.placesDisponibles === 0
+              {trip.places_disponibles === 0
                 ? "Complet"
                 : bookingLoading
                 ? "Réservation…"
