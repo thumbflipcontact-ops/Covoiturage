@@ -44,6 +44,7 @@ workflows:
       - name: Build RELEASE APK
         script: |
           cd android
+          chmod +x gradlew
           ./gradlew assembleRelease
 
     artifacts:
