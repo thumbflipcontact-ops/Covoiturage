@@ -1,13 +1,13 @@
 workflows:
-  android-workflow:
-    name: Android APK (Capacitor)
+  android-release-apk:
+    name: Android Release APK (Capacitor)
     max_build_duration: 60
     instance_type: linux_x2
 
     environment:
-      vars:
-        NODE_VERSION: 18
       node: 18
+      groups:
+        - android_signing
 
     triggering:
       events:
@@ -29,10 +29,23 @@ workflows:
         script: |
           npx cap sync android
 
-      - name: Build Android APK
+      - name: Decode keystore
+        script: |
+          echo $ANDROID_KEYSTORE_BASE64 | base64 --decode > android/app/covoicam.keystore
+
+      - name: Configure signing
+        script: |
+          cat >> android/gradle.properties <<EOF
+          MYAPP_UPLOAD_STORE_FILE=covoicam.keystore
+          MYAPP_UPLOAD_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD
+          MYAPP_UPLOAD_KEY_ALIAS=$ANDROID_KEY_ALIAS
+          MYAPP_UPLOAD_KEY_PASSWORD=$ANDROID_KEY_PASSWORD
+          EOF
+
+      - name: Build RELEASE APK
         script: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
 
     artifacts:
-      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/apk/release/*.apk
