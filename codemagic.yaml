@@ -2,7 +2,6 @@ workflows:
   android-release-apk:
     name: Android Release APK (Capacitor)
     max_build_duration: 60
-    instance_type: linux   # ✅ FREE plan compatible
 
     environment:
       node: 22
