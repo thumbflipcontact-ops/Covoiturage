@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AppProviders } from "@/components/AppProviders";
+import { AuthGate } from "@/components/AuthGate";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,10 +19,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr">
-      <body className={inter.className + " bg-slate-50 text-slate-900"}>
-        <AppProviders>{children}</AppProviders>
+      <body className={`${inter.className} bg-slate-50 text-slate-900`}>
+        <AppProviders>
+          <AuthGate>{children}</AuthGate>
+        </AppProviders>
       </body>
     </html>
   );
 }
-

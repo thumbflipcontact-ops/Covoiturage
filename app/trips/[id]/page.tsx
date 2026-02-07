@@ -2,18 +2,25 @@ import { supabase } from "@/lib/supabase";
 import TripClient from "./TripClient";
 
 /* =========================================================
-   REQUIRED for output: "export"
+   REQUIRED for static export
 ========================================================= */
 export async function generateStaticParams() {
-  const { data } = await supabase.from("trips").select("id");
+  const { data, error } = await supabase
+    .from("trips")
+    .select("id");
 
-  if (!data) return [];
+  if (error || !data) {
+    return [];
+  }
 
   return data.map((trip) => ({
     id: trip.id,
   }));
 }
 
+/* =========================================================
+   Server wrapper (STATIC)
+========================================================= */
 export default function TripPage({
   params,
 }: {

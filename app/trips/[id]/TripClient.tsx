@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useTrips } from "@/components/trip-context";
 import { MainNavbar } from "@/components/MainNavbar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 /* =====================
    Error translation
@@ -34,11 +34,35 @@ export default function TripClient({ id }: { id: string }) {
   const router = useRouter();
   const { trips, currentUser } = useTrips();
 
-  const [loading, setLoading] = useState(false);
+  const [uiReady, setUiReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  /* =====================
+     Wait for trips to load
+  ===================== */
+  useEffect(() => {
+    if (trips.length > 0) {
+      setUiReady(true);
+    }
+  }, [trips]);
+
+  /* =====================
+     Loading state (CRITICAL)
+  ===================== */
+  if (!uiReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-sm text-slate-500">Chargement du trajet…</p>
+      </div>
+    );
+  }
 
   const trip = trips.find((t) => t.id === id);
 
+  /* =====================
+     Real not-found (AFTER load)
+  ===================== */
   if (!trip) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -47,13 +71,16 @@ export default function TripClient({ id }: { id: string }) {
     );
   }
 
+  /* =====================
+     Booking
+  ===================== */
   const handleBooking = async () => {
     if (!currentUser) {
       router.push("/login");
       return;
     }
 
-    setLoading(true);
+    setBookingLoading(true);
     setError(null);
 
     try {
@@ -70,14 +97,14 @@ export default function TripClient({ id }: { id: string }) {
 
       if (!res.ok) {
         setError(translateBookingError(data.error));
-        setLoading(false);
+        setBookingLoading(false);
         return;
       }
 
       router.push("/bookings");
     } catch {
       setError("Impossible de contacter le serveur");
-      setLoading(false);
+      setBookingLoading(false);
     }
   };
 
@@ -131,12 +158,12 @@ export default function TripClient({ id }: { id: string }) {
           <div className="mt-8 flex justify-end">
             <button
               onClick={handleBooking}
-              disabled={loading || trip.placesDisponibles === 0}
+              disabled={bookingLoading || trip.placesDisponibles === 0}
               className="rounded-full bg-violet-600 px-6 py-3 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
             >
               {trip.placesDisponibles === 0
                 ? "Complet"
-                : loading
+                : bookingLoading
                 ? "Réservation…"
                 : "Réserver ce trajet"}
             </button>

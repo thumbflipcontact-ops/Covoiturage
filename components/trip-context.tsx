@@ -36,8 +36,14 @@ export type User = {
 };
 
 type AppContextValue = {
-  currentUser?: User;
+  /** AUTH */
+  currentUser: User | null;
+  authLoading: boolean;
+
+  /** DATA */
   trips: Trip[];
+
+  /** ACTIONS */
   signup: (email: string, password: string) => Promise<string | void>;
   login: (email: string, password: string) => Promise<string | void>;
   logout: () => Promise<void>;
@@ -53,52 +59,65 @@ const TripContext = createContext<AppContextValue | undefined>(undefined);
 ======================= */
 
 export function TripProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<User | undefined>();
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  /* -----------------------
-     Auth session
-  ------------------------ */
+  /* =======================
+     INIT AUTH (ONCE)
+  ======================= */
 
   useEffect(() => {
-    const init = async () => {
+    let mounted = true;
+
+    const initAuth = async () => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
+      if (!mounted) return;
+
       if (session?.user) {
         setCurrentUser({
           id: session.user.id,
           email: session.user.email!,
         });
+        await loadTrips();
+      } else {
+        setCurrentUser(null);
       }
 
-      await loadTrips();
-      setLoading(false);
+      setAuthLoading(false);
     };
 
-    init();
+    initAuth();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!mounted) return;
+
       if (session?.user) {
         setCurrentUser({
           id: session.user.id,
           email: session.user.email!,
         });
+        await loadTrips();
       } else {
-        setCurrentUser(undefined);
+        setCurrentUser(null);
+        setTrips([]);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  /* -----------------------
+  /* =======================
      Load trips
-  ------------------------ */
+  ======================= */
 
   const loadTrips = async () => {
     const { data, error } = await supabase
@@ -129,9 +148,9 @@ export function TripProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  /* -----------------------
+  /* =======================
      Auth actions
-  ------------------------ */
+  ======================= */
 
   const signup: AppContextValue["signup"] = async (email, password) => {
     const { error } = await supabase.auth.signUp({ email, password });
@@ -148,18 +167,19 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setCurrentUser(undefined);
+    setCurrentUser(null);
+    setTrips([]);
   };
 
-  /* -----------------------
-     Add trip (FIXED)
-  ------------------------ */
+  /* =======================
+     Add trip
+  ======================= */
 
   const addTrip: AppContextValue["addTrip"] = async (trip) => {
     if (!currentUser) return;
 
     const { error } = await supabase.from("trips").insert({
-      driver_id: currentUser.id, // 🔑 must exist in auth.users
+      driver_id: currentUser.id,
       depart: trip.depart,
       arrivee: trip.arrivee,
       ville_intermediaire: trip.villeIntermediaire ?? null,
@@ -180,8 +200,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
     await loadTrips();
   };
 
+  /* =======================
+     Context value
+  ======================= */
+
   const value: AppContextValue = {
     currentUser,
+    authLoading,
     trips,
     signup,
     login,
@@ -189,7 +214,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
     addTrip,
   };
 
-  if (loading) return null;
+  // 🚫 NOTHING RENDERS UNTIL AUTH IS KNOWN
+  if (authLoading) return null;
 
   return (
     <TripContext.Provider value={value}>
