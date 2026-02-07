@@ -76,7 +76,7 @@ export default function ProfilPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white">
-      <MainNavbar active="profil" />
+      <MainNavbar/>
 
       <main className="mx-auto max-w-6xl px-6 py-6">
         {/* Page title */}

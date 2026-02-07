@@ -58,7 +58,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar active="notifications" />
+      <MainNavbar/>
 
       <main className="mx-auto max-w-3xl px-6 py-8">
         <h1 className="text-2xl font-semibold mb-6">Notifications</h1>

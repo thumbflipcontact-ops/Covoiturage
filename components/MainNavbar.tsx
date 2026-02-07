@@ -49,13 +49,25 @@ export function MainNavbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  if (!currentUser) return null;
+  /* -----------------------
+     Force auth-first UX
+  ------------------------ */
+  useEffect(() => {
+    if (!currentUser && pathname !== "/login" && pathname !== "/signup") {
+      router.replace("/signup");
+    }
+  }, [currentUser, pathname, router]);
 
-  const initial = currentUser.email.charAt(0).toUpperCase();
+  const initial = currentUser?.email?.charAt(0).toUpperCase() ?? "U";
+
+  const isActive = (href: string) =>
+    href === "/"
+      ? pathname === "/"
+      : pathname.startsWith(href);
 
   return (
     <>
-      {/* ===== TOP BAR (desktop + mobile) ===== */}
+      {/* ===== TOP BAR ===== */}
       <header className="bg-transparent">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           {/* Logo */}
@@ -68,25 +80,22 @@ export function MainNavbar() {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex gap-1 rounded-full bg-white p-1 shadow text-sm">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.key}
-                  href={item.href}
-                  className={`rounded-full px-4 py-2 ${
-                    active
-                      ? "bg-violet-600 text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={`rounded-full px-4 py-2 ${
+                  isActive(item.href)
+                    ? "bg-violet-600 text-white"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
 
-          {/* User */}
+          {/* User menu */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -106,16 +115,18 @@ export function MainNavbar() {
                 >
                   Profil
                 </button>
-                <button
-                  onClick={async () => {
-                    setMenuOpen(false);
-                    await logout();
-                    router.replace("/login");
-                  }}
-                  className="block w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50"
-                >
-                  Se déconnecter
-                </button>
+                {currentUser && (
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      await logout();
+                      router.replace("/login");
+                    }}
+                    className="block w-full rounded-lg px-3 py-2 text-left text-red-600 hover:bg-red-50"
+                  >
+                    Se déconnecter
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -124,21 +135,20 @@ export function MainNavbar() {
 
       {/* ===== MOBILE BOTTOM NAV ===== */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 flex justify-around border-t bg-white py-2 md:hidden">
-        {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <button
-              key={item.key}
-              onClick={() => router.push(item.href)}
-              className={`flex flex-col items-center text-xs ${
-                active ? "text-violet-600 font-semibold" : "text-slate-500"
-              }`}
-            >
-              <span className="text-lg">{item.icon}</span>
-              {item.label}
-            </button>
-          );
-        })}
+        {NAV_ITEMS.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => router.push(item.href)}
+            className={`flex flex-col items-center text-xs ${
+              isActive(item.href)
+                ? "text-violet-600 font-semibold"
+                : "text-slate-500"
+            }`}
+          >
+            <span className="text-lg">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
       </nav>
     </>
   );

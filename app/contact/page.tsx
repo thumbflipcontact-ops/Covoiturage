@@ -47,7 +47,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar active="contact" />
+      <MainNavbar/>
 
       {/* Purple hero band */}
       <div className="bg-primary-gradient text-white">

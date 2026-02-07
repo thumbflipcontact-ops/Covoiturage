@@ -117,7 +117,7 @@ export default function GainsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white">
-      <MainNavbar active="gains" />
+      <MainNavbar/>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
         {/* Header */}

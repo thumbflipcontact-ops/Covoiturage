@@ -183,7 +183,7 @@ export default function BookingsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar active="mes-trajets" />
+      <MainNavbar/>
 
       <main className="mx-auto max-w-6xl px-6 py-8">
         <h1 className="text-3xl font-semibold text-slate-900">

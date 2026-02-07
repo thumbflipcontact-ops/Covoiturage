@@ -3,30 +3,20 @@
 import { useTrips } from "@/components/trip-context";
 import { MainNavbar } from "@/components/MainNavbar";
 
-/**
- * Local helper type for trips that MAY have favorites.
- * This does NOT modify the core Trip type.
- */
-type TripWithFavorites = {
-  favoriteUserIds?: string[];
-};
-
 export default function FavorisPage() {
-  const { trips, currentUser } = useTrips();
+  const { currentUser } = useTrips();
 
-  const favorites = currentUser
-    ? trips.filter((trip) => {
-        const t = trip as TripWithFavorites;
-        return (
-          Array.isArray(t.favoriteUserIds) &&
-          t.favoriteUserIds.includes(currentUser.id)
-        );
-      })
-    : [];
+  // ✅ Favorites feature not implemented yet (no DB support)
+  const favorites: never[] = [];
+
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-violet-50 to-white">
-      <MainNavbar active="favoris" />
+      {/* ✅ NO props */}
+      <MainNavbar />
 
       <main className="mx-auto max-w-6xl px-6 py-6">
         {/* Header */}
@@ -36,7 +26,7 @@ export default function FavorisPage() {
           </div>
           <div>
             <h1 className="text-3xl font-semibold text-slate-900">
-              Mes Favoris
+              Mes favoris
             </h1>
             <p className="text-sm text-slate-500">
               Retrouvez vos trajets sauvegardés
@@ -44,7 +34,7 @@ export default function FavorisPage() {
           </div>
         </div>
 
-        {/* Card */}
+        {/* Content */}
         <section className="mt-8 rounded-3xl bg-white p-8 shadow-sm">
           {favorites.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -56,45 +46,7 @@ export default function FavorisPage() {
                 Vous n&apos;avez pas encore ajouté de trajets favoris.
               </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {favorites.map((trip) => (
-                <div
-                  key={trip.id}
-                  className="flex flex-col justify-between gap-3 rounded-2xl bg-slate-50 px-5 py-4 text-sm text-slate-700 sm:flex-row sm:items-center"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl text-violet-500">♥</span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {trip.depart} → {trip.arrivee}
-                      </p>
-
-                      {"villeIntermediaire" in trip && trip.villeIntermediaire && (
-                        <p className="text-xs text-slate-500">
-                          Via {trip.villeIntermediaire}
-                        </p>
-                      )}
-
-                      <p className="mt-1 text-xs text-slate-500">
-                        {trip.date} • {trip.heure} • {trip.typeVehicule}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-violet-600">
-                      {trip.prixParPlace.toLocaleString("fr-FR")} FCFA
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {trip.placesDisponibles} place
-                      {trip.placesDisponibles > 1 ? "s" : ""} restantes
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          ) : null}
         </section>
       </main>
     </div>

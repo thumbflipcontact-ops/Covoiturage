@@ -27,7 +27,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-primary-gradient text-white">
-      <MainNavbar active="accueil" />
+      <MainNavbar/>
 
       <main className="flex-1">
         {/* HERO */}

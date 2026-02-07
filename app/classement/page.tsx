@@ -10,7 +10,7 @@ export default function ClassementPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar active="classement" />
+      <MainNavbar/>
 
       <main className="mx-auto max-w-6xl px-6 py-6 space-y-6">
         {/* Title */}

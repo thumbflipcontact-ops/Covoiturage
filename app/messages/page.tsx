@@ -78,7 +78,7 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <MainNavbar active="messages" />
+      <MainNavbar/>
 
       <main className="mx-auto flex max-w-6xl gap-6 px-6 py-6">
         {!hasBooking ? (
