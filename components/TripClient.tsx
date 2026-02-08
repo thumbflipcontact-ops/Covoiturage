@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { MainNavbar } from "@/components/MainNavbar";
 import { supabase } from "@/lib/supabase";
 import { useTrips } from "@/components/trip-context";
@@ -40,9 +40,6 @@ function translateBookingError(msg: string) {
 
 export default function TripClient() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const tripId = searchParams.get("id");
-
   const { currentUser } = useTrips();
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -51,9 +48,12 @@ export default function TripClient() {
   const [error, setError] = useState<string | null>(null);
 
   /* =====================
-     Fetch trip (STATIC SAFE)
+     READ QUERY PARAM SAFELY (NO useSearchParams)
   ===================== */
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tripId = params.get("id");
+
     if (!tripId) {
       setLoading(false);
       return;
@@ -76,8 +76,11 @@ export default function TripClient() {
     };
 
     loadTrip();
-  }, [tripId]);
+  }, []);
 
+  /* =====================
+     Loading
+  ===================== */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -86,6 +89,9 @@ export default function TripClient() {
     );
   }
 
+  /* =====================
+     Not found
+  ===================== */
   if (!trip) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
