@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { MainNavbar } from "@/components/MainNavbar";
 import { supabase } from "@/lib/supabase";
 import { useTrips } from "@/components/trip-context";
@@ -38,8 +38,11 @@ function translateBookingError(msg: string) {
   return "Impossible d’effectuer la réservation pour le moment";
 }
 
-export default function TripClient({ id }: { id: string }) {
+export default function TripClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tripId = searchParams.get("id");
+
   const { currentUser } = useTrips();
 
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -48,14 +51,19 @@ export default function TripClient({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
 
   /* =====================
-     FETCH TRIP BY ID (CRITICAL FIX)
+     Fetch trip (STATIC SAFE)
   ===================== */
   useEffect(() => {
+    if (!tripId) {
+      setLoading(false);
+      return;
+    }
+
     const loadTrip = async () => {
       const { data, error } = await supabase
         .from("trips")
         .select("*")
-        .eq("id", id)
+        .eq("id", tripId)
         .single();
 
       if (error || !data) {
@@ -68,11 +76,8 @@ export default function TripClient({ id }: { id: string }) {
     };
 
     loadTrip();
-  }, [id]);
+  }, [tripId]);
 
-  /* =====================
-     Loading
-  ===================== */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -81,9 +86,6 @@ export default function TripClient({ id }: { id: string }) {
     );
   }
 
-  /* =====================
-     Real not-found
-  ===================== */
   if (!trip) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
